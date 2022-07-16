@@ -167,7 +167,7 @@ class Captcha
      * @param bool        $api
      * @return Response
      */
-    public function create(string $config = null, bool $api = false): Response
+    public function create(string $responseType='image', string $config = null, bool $api = false): Response
     {
         $this->configure($config);
 
@@ -219,6 +219,10 @@ class Captcha
             $this->writeCurve();
         }
 
+        $this->session->set('captcha', [
+            'code' => $generator['value'],
+        ]);
+
         // 绘验证码
         $text = $this->useZh ? preg_split('/(?<!^)(?!$)/u', $generator['value']) : str_split($generator['value']); // 验证码
 
@@ -237,7 +241,15 @@ class Captcha
         $content = ob_get_clean();
         imagedestroy($this->im);
 
-        return response($content, 200, ['Content-Length' => strlen($content)])->contentType('image/png');
+        if($responseType == 'image'){
+            return response($content, 200, ['Content-Length' => strlen($content)])->contentType('image/png');
+        }else{
+            return json([
+                'code' => $generator['value'],
+                'captcha' => 'data:image/png:base64,'.base64_encode($content)
+            ]);
+        }
+        
     }
 
     /**
